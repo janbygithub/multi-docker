@@ -1,0 +1,24 @@
+sudo: required
+  services:
+    - docker
+
+before_install:
+  - docker build -t janby/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true janby/react-test npm test
+
+after-success:
+  - docker build -t janby/multi-client ./client
+  - docker build -t janby/multi-nginx ./nginx
+  - docker build -t janby/multi-server ./server
+  - docker build -t janby/multi-worker ./worker
+  # Log in to the docker CLI - potreba meno+heslo - aby nebylo videt, v Travis se udela ji Environment variables:
+  # DOCKER_ID a DOCKER_PASSWORD
+  echo "$DOCKER_PASSWORD" | docker login -u "DOCKER_ID" --password-stdin
+
+  # Take those images and push them to docker hub
+  - docker push janby/multi-client
+  - docker push janby/multi-nginx
+  - docker push janby/multi-server
+  - docker push janby/multi-worker
